@@ -98,7 +98,7 @@ const handleMoveUpdate = (startX, startY, finX, finY) => {
 let ws;
 let worldStartRequested = false;
 let worldStartCompleted = false;
-window.requireCaptcha = true;
+window.requireCaptcha = false;
 if(!isSingleMode){
     ws = new WebSocket(HOST);
     ws.binaryType = "arraybuffer";
@@ -107,8 +107,7 @@ if(!isSingleMode){
         const msg = new Uint16Array(data.data);
 
         if(msg.byteLength === 4 && msg[0] === 60001){
-            window.requireCaptcha = msg[1] === 1;
-            if(window.requireCaptcha === false && worldStartRequested && worldStartCompleted === false){
+            if(worldStartRequested && worldStartCompleted === false){
                 startWorldWithoutCaptcha();
             }
         }
@@ -246,26 +245,7 @@ if(!isSingleMode){
 
     window.beginWorldMode = () => {
         worldStartRequested = true;
-        if(window.requireCaptcha === false || typeof window.grecaptcha === 'undefined'){
-            startWorldWithoutCaptcha();
-            return;
-        }
-        grecaptcha.ready(() => {
-            grecaptcha.render(document.querySelector(".g-recaptcha"), {
-                'sitekey': '0x4AAAAAABDl4Wthv8-PLPyU',
-                'callback': (captchaResponse) => {
-                    worldStartCompleted = true;
-                    const buf = new Uint8Array(captchaResponse.length);
-                    encodeAtPosition(captchaResponse, buf, 0);
-        
-                    window.send(buf);
-
-                    if(window.hideMenuOverlay){
-                        window.hideMenuOverlay();
-                    }
-                }
-            })
-        })
+        startWorldWithoutCaptcha();
     }
 
     if(window.pendingWorldStart){

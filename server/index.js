@@ -7,7 +7,7 @@ import { closest } from 'color-2-name';
 const captchaSecretKey = process.env.TURNSTILE_SECRET ?? "[captcha key]";
 const isProd = process.env.NODE_ENV === 'production' || process.env.FORCE_PROD === '1';
 const captchaEnabled = captchaSecretKey.trim() !== "" && captchaSecretKey !== "[captcha key]";
-const requireCaptcha = isProd && captchaEnabled;
+const requireCaptcha = false;
 console.log({isProd});
 
 let leaderboard = {/*teamId: kills*/};
