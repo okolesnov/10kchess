@@ -1,5 +1,18 @@
-globalThis.boardW = 64//64//512;
-globalThis.boardH = 64//64//512;
+const defaultBoardSize = 64//64//512;
+let resolvedBoardSize = defaultBoardSize;
+
+if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
+    const size = Number.parseInt(params.get('size'), 10);
+    const allowedSizes = new Set([32, 48, 64, 96, 128]);
+    if (mode === 'single' && Number.isFinite(size) && allowedSizes.has(size)) {
+        resolvedBoardSize = size;
+    }
+}
+
+globalThis.boardW = resolvedBoardSize;
+globalThis.boardH = resolvedBoardSize;
 
 globalThis.moveCooldown = 1.5 * 1000;
 
