@@ -306,6 +306,11 @@ global.app = uWS.App().ws('/*', {
 
         // ws.name = teamToName(ws.id);
 
+        const configBuf = new Uint16Array(2);
+        configBuf[0] = 60001;
+        configBuf[1] = requireCaptcha ? 1 : 0;
+        send(ws, configBuf);
+
         // send initial board state
         ws.subscribe('global');
 
