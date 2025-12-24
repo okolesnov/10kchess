@@ -4,34 +4,8 @@ import '../shared/constants.js';
 import badWords from './badwords.js';
 import { closest } from 'color-2-name';
 
-import { networkInterfaces } from 'os';
-
 const captchaSecretKey = process.env.TURNSTILE_SECRET ?? "[captcha key]";
-
-function serverIp(){
-    const nets = networkInterfaces();
-    const results = {};
-    
-    for (const name of Object.keys(nets)) {
-        for (const net of nets[name]) {
-            // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
-            // 'IPv4' is in Node <= 17, from 18 it's a number 4 or 6
-            const familyV4Value = typeof net.family === 'string' ? 'IPv4' : 4
-            if (net.family === familyV4Value && !net.internal) {
-                if (!results[name]) {
-                    results[name] = [];
-                }
-                results[name].push(net.address);
-            }
-        }
-    }
-
-    return results;
-}
-
-const info = serverIp();
-
-const isProd = !(Array.isArray(info['Wi-Fi']) && info['Wi-Fi'][0] === 'your local developer ip address');
+const isProd = process.env.NODE_ENV === 'production' || process.env.FORCE_PROD === '1';
 const captchaEnabled = captchaSecretKey.trim() !== "" && captchaSecretKey !== "[captcha key]";
 const requireCaptcha = isProd && captchaEnabled;
 console.log({isProd});
@@ -572,6 +546,13 @@ function getIp(res, req) {
     return rawIp;
 }
 
+function isLocalIp(ip) {
+    return ip === '127.0.0.1'
+        || ip === '::1'
+        || ip === '0:0:0:0:0:0:0:1'
+        || (typeof ip === 'string' && ip.startsWith('::ffff:127.'));
+}
+
 global.send = (ws, msg) => {
     ws.send(msg, true, false);
 }
@@ -589,7 +570,7 @@ app.get("/", (res, req) => {
     const ip = getIp(res, req);
     if(servedIps[ip] === undefined) servedIps[ip] = 0;
     
-    if(servedIps[ip] > 3 && isProd === true) {
+    if(servedIps[ip] > 3 && isProd === true && isLocalIp(ip) === false) {
         res.end('ratelimit. Try again in 20 seconds.');
         console.log('main site ratelimit from', ip);
         return;
@@ -605,7 +586,7 @@ app.get("/:filename/:filename2", (res, req) => {
     const ip = getIp(res, req);
     if(fileServedIps[ip] === undefined) fileServedIps[ip] = 0;
     fileServedIps[ip]++;
-    if(fileServedIps[ip] > 25 && isProd === true){
+    if(fileServedIps[ip] > 25 && isProd === true && isLocalIp(ip) === false){
         res.end('ratelimit. try again in 20 seconds.');
         console.log('file ratelimit', ip);
         return;
@@ -632,7 +613,7 @@ app.get("/client/assets/:filename", (res, req) => {
     const ip = getIp(res, req);
     if(fileServedIps[ip] === undefined) fileServedIps[ip] = 0;
     fileServedIps[ip]++;
-    if(fileServedIps[ip] > 25 && isProd === true){
+    if(fileServedIps[ip] > 25 && isProd === true && isLocalIp(ip) === false){
         res.end('ratelimit. try again in 20 seconds.');
         console.log('asset file ratelimit', ip);
         return;
