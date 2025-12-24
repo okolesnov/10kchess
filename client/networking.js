@@ -96,6 +96,9 @@ const handleMoveUpdate = (startX, startY, finX, finY) => {
 };
 
 let ws;
+let worldStartRequested = false;
+let worldStartCompleted = false;
+window.requireCaptcha = true;
 if(!isSingleMode){
     ws = new WebSocket(HOST);
     ws.binaryType = "arraybuffer";
@@ -103,7 +106,14 @@ if(!isSingleMode){
     ws.addEventListener("message", function (data) {
         const msg = new Uint16Array(data.data);
 
-        if(msg[0] === 64535 && msg[1] === 12345){
+        if(msg.byteLength === 4 && msg[0] === 60001){
+            window.requireCaptcha = msg[1] === 1;
+            if(window.requireCaptcha === false && worldStartRequested && worldStartCompleted === false){
+                startWorldWithoutCaptcha();
+            }
+        }
+
+        else if(msg[0] === 64535 && msg[1] === 12345){
             let teamsToNeutralize = [];
             for(let i = 2; i < msg.length; i++){
                 teamsToNeutralize.push(msg[i]);
@@ -196,7 +206,7 @@ if(!isSingleMode){
 }
 
 let connected = false;
-window.send = () => {};
+    window.send = () => {};
 
 const msgs = [];
 if(!isSingleMode){
@@ -224,15 +234,31 @@ if(!isSingleMode){
     }
 
     // join game
+    const startWorldWithoutCaptcha = () => {
+        if(worldStartCompleted) return;
+        worldStartCompleted = true;
+        const buf = new Uint8Array(0);
+        window.send(buf);
+        if(window.hideMenuOverlay){
+            window.hideMenuOverlay();
+        }
+    };
+
     window.beginWorldMode = () => {
+        worldStartRequested = true;
+        if(window.requireCaptcha === false || typeof window.grecaptcha === 'undefined'){
+            startWorldWithoutCaptcha();
+            return;
+        }
         grecaptcha.ready(() => {
             grecaptcha.render(document.querySelector(".g-recaptcha"), {
                 'sitekey': '0x4AAAAAABDl4Wthv8-PLPyU',
                 'callback': (captchaResponse) => {
+                    worldStartCompleted = true;
                     const buf = new Uint8Array(captchaResponse.length);
                     encodeAtPosition(captchaResponse, buf, 0);
         
-                    ws.send(buf);
+                    window.send(buf);
 
                     if(window.hideMenuOverlay){
                         window.hideMenuOverlay();
