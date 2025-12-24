@@ -6,7 +6,7 @@ import { closest } from 'color-2-name';
 
 import { networkInterfaces } from 'os';
 
-const captchaSecretKey = "[captcha key]"
+const captchaSecretKey = process.env.TURNSTILE_SECRET ?? "[captcha key]";
 
 function serverIp(){
     const nets = networkInterfaces();
@@ -32,6 +32,8 @@ function serverIp(){
 const info = serverIp();
 
 const isProd = !(Array.isArray(info['Wi-Fi']) && info['Wi-Fi'][0] === 'your local developer ip address');
+const captchaEnabled = captchaSecretKey.trim() !== "" && captchaSecretKey !== "[captcha key]";
+const requireCaptcha = isProd && captchaEnabled;
 console.log({isProd});
 
 let leaderboard = {/*teamId: kills*/};
@@ -331,32 +333,38 @@ global.app = uWS.App().ws('/*', {
         if(ws.verified === false || (ws.dead === true && !(u8[0] === 0xf7 && u8[1] === 0xb7/*chat msgs are ok*/) )){
             (async()=>{
                 if(ws.verified === false){
-                    // captcha
-                    const captchaKey = decodeText(u8);
-                    if(usedCaptchaKeys[captchaKey] !== undefined){
-                        if(ws.closed !== true) ws.close();
-                        return;
-                    }
-    
-                    await new Promise((resolve) => {
-                        fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-                            method: 'POST',
-                            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                            body: `secret=${captchaSecretKey}&response=${captchaKey}`,
-                        }).then(async (d) => {
-                            const response = JSON.parse(await d.text());
-                            
-                            if(response.success === true){
-                                ws.verified = true;
-                            } else {
-                                if(ws.closed !== true) ws.close();
-                            }
-        
-                            usedCaptchaKeys[captchaKey] = Date.now();
-                            resolve();
+                    if(requireCaptcha){
+                        // captcha
+                        const captchaKey = decodeText(u8);
+                        if(usedCaptchaKeys[captchaKey] !== undefined){
+                            if(ws.closed !== true) ws.close();
+                            return;
+                        }
+
+                        await new Promise((resolve) => {
+                            fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+                                method: 'POST',
+                                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                                body: `secret=${captchaSecretKey}&response=${captchaKey}`,
+                            }).then(async (d) => {
+                                const response = JSON.parse(await d.text());
+                                
+                                if(response.success === true){
+                                    ws.verified = true;
+                                } else {
+                                    if(ws.closed !== true) ws.close();
+                                }
+            
+                                usedCaptchaKeys[captchaKey] = Date.now();
+                                resolve();
+                            })
                         })
-                    })
-                    ws.verified = true;
+                        if(ws.verified !== true){
+                            return;
+                        }
+                    } else {
+                        ws.verified = true;
+                    }
                 }
     
                 if(Date.now() < ws.respawnTime){
