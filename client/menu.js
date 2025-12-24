@@ -7,6 +7,7 @@
     const singleBots = document.getElementById('singleBots');
     const singleStartBtn = document.getElementById('singleStartBtn');
     const captchaContainer = document.getElementById('captchaContainer');
+    const menuStatus = document.getElementById('menuStatus');
 
     const menuParams = new URLSearchParams(window.location.search);
     const mode = menuParams.get('mode');
@@ -31,6 +32,9 @@
         captchaContainer?.classList.remove('hidden');
         worldModeBtn?.setAttribute('disabled', 'disabled');
         singleModeBtn?.setAttribute('disabled', 'disabled');
+        if (menuStatus) {
+            menuStatus.textContent = 'Подключение...';
+        }
         if (window.beginWorldMode) {
             window.beginWorldMode();
         } else {
@@ -46,6 +50,10 @@
         nextParams.set('size', selectedSize);
         nextParams.set('bots', selectedBots);
         nextParams.set('autostart', '1');
+        if (window.startSingleGame && mode === 'single') {
+            window.startSingleGame({ size: selectedSize, bots: selectedBots });
+            return;
+        }
         window.location.search = nextParams.toString();
     };
 

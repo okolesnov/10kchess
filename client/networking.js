@@ -1,6 +1,7 @@
 const queryParams = new URLSearchParams(window.location.search);
 const isSingleMode = queryParams.get('mode') === 'single';
 const isLocalHost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname);
+const allowCaptchaBypass = isLocalHost || queryParams.get('captcha') === '0';
 
 window.selfId = -1;
 
@@ -225,30 +226,55 @@ if(!isSingleMode){
     }
 
     // join game
+    const startWithoutCaptcha = () => {
+        const buf = new Uint8Array(0);
+        ws.send(buf);
+        if(window.hideMenuOverlay){
+            window.hideMenuOverlay();
+        }
+    };
+
     window.beginWorldMode = () => {
-        if(isLocalHost || !window.grecaptcha){
-            const buf = new Uint8Array(0);
-            ws.send(buf);
-            if(window.hideMenuOverlay){
-                window.hideMenuOverlay();
-            }
+        if(allowCaptchaBypass || !window.grecaptcha){
+            startWithoutCaptcha();
             return;
         }
 
-        grecaptcha.ready(() => {
-            grecaptcha.render(document.querySelector(".g-recaptcha"), {
-                'sitekey': '0x4AAAAAABDl4Wthv8-PLPyU',
-                'callback': (captchaResponse) => {
-                    const buf = new Uint8Array(captchaResponse.length);
-                    encodeAtPosition(captchaResponse, buf, 0);
-        
-                    ws.send(buf);
+        let started = false;
+        const handleStart = (captchaResponse) => {
+            if(started) return;
+            started = true;
+            const buf = new Uint8Array(captchaResponse.length);
+            encodeAtPosition(captchaResponse, buf, 0);
+    
+            ws.send(buf);
 
-                    if(window.hideMenuOverlay){
-                        window.hideMenuOverlay();
+            if(window.hideMenuOverlay){
+                window.hideMenuOverlay();
+            }
+        };
+
+        const fallbackTimer = setTimeout(() => {
+            if(!started && allowCaptchaBypass){
+                startWithoutCaptcha();
+            }
+        }, 2500);
+
+        grecaptcha.ready(() => {
+            try {
+                grecaptcha.render(document.querySelector(".g-recaptcha"), {
+                    'sitekey': '0x4AAAAAABDl4Wthv8-PLPyU',
+                    'callback': (captchaResponse) => {
+                        clearTimeout(fallbackTimer);
+                        handleStart(captchaResponse);
                     }
+                })
+            } catch (e){
+                clearTimeout(fallbackTimer);
+                if(allowCaptchaBypass){
+                    startWithoutCaptcha();
                 }
-            })
+            }
         })
     }
 

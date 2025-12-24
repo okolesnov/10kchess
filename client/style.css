@@ -75,6 +75,13 @@ body {
     color: rgba(255, 255, 255, 0.6);
 }
 
+.menu-status {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.75);
+    min-height: 1.2em;
+}
+
 .menu-action {
     background: #00b4ff;
     border: none;
