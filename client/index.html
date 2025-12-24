@@ -13,8 +13,40 @@
 </head>
 
 <body>
-    <div id="fullscreenDiv">
-        <div class="g-recaptcha" data-sitekey="6Lf3fAQrAAAAAHA16QHwE18_MZU9Vc3Iex6jVW2G"></div>
+    <div id="menuOverlay" class="menu-overlay">
+        <div class="menu-panel">
+            <div class="menu-header">
+                <h1>10,000 Player Chess</h1>
+                <p>Выберите режим перед стартом</p>
+            </div>
+            <div class="menu-section">
+                <button id="worldModeBtn" class="menu-action">Подключиться к «Омниарене»</button>
+                <p class="menu-hint">Общая мировая карта для всех игроков.</p>
+            </div>
+            <div class="menu-section">
+                <button id="singleModeBtn" class="menu-action secondary">Single / Одиночная игра</button>
+                <div id="singleOptions" class="menu-submenu hidden">
+                    <label>
+                        Размер карты
+                        <select id="singleMapSize">
+                            <option value="32">32×32</option>
+                            <option value="48">48×48</option>
+                            <option value="64" selected>64×64</option>
+                            <option value="96">96×96</option>
+                            <option value="128">128×128</option>
+                        </select>
+                    </label>
+                    <label>
+                        Боты
+                        <input id="singleBots" type="number" min="0" max="20" step="1" value="4">
+                    </label>
+                    <button id="singleStartBtn" class="menu-action">Начать одиночную игру</button>
+                </div>
+            </div>
+            <div id="captchaContainer" class="menu-section hidden">
+                <div class="g-recaptcha" data-sitekey="6Lf3fAQrAAAAAHA16QHwE18_MZU9Vc3Iex6jVW2G"></div>
+            </div>
+        </div>
     </div>
 
     <canvas id="minimapCanvas" style="z-index: -1"></canvas>
@@ -28,6 +60,7 @@
     </div>
 
     <script src="/shared/constants.js"></script>
+    <script src="/client/menu.js"></script>
     <script src="/client/input.js"></script>
     <script src="/client/client.js"></script>
     <script src="/client/networking.js"></script>
