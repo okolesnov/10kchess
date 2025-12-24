@@ -6,6 +6,7 @@ const singleMapSize = document.getElementById('singleMapSize');
 const singleBots = document.getElementById('singleBots');
 const singleStartBtn = document.getElementById('singleStartBtn');
 const captchaContainer = document.getElementById('captchaContainer');
+window.requireCaptcha = window.requireCaptcha ?? false;
 
 const params = new URLSearchParams(window.location.search);
 const mode = params.get('mode');
@@ -27,7 +28,6 @@ window.hideMenuOverlay = () => {
 };
 
 const beginWorldMode = () => {
-    captchaContainer?.classList.remove('hidden');
     worldModeBtn?.setAttribute('disabled', 'disabled');
     singleModeBtn?.setAttribute('disabled', 'disabled');
     if (window.beginWorldMode) {
